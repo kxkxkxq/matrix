@@ -6,7 +6,8 @@ namespace matrices
 {
     template <typename T> class SquareMatrix
     {
-        template <typename U> class Buffer_
+        public :
+        template <typename U> class Buffer_ final
         {
             size_t bufSize_; 
             U* pBuf_;
@@ -15,10 +16,10 @@ namespace matrices
 
         public :
 
-            Buffer_(const size_t size) : bufSize_(size), pBuf_(new U[size]) {};
-            Buffer_(const size_t size, U val = U{}) : bufSize_(size), pBuf_(new U[size](val)) {};
+            Buffer_(const size_t size = 0) : bufSize_(size), pBuf_(new U[size]()) {};
             template <typename Iter>
             Buffer_(const size_t size, const Iter begin, const Iter end);
+            Buffer_(const size_t size, U val); 
             
             Buffer_(const Buffer_& rhs);
             Buffer_(Buffer_&& rhs) noexcept : bufSize_(std::move(rhs.bufSize_)), 
@@ -47,14 +48,29 @@ namespace matrices
 
     public :
 
-        const size_t size() const noexcept {return matrixSize_;};
+    template <typename Iter> 
+    SquareMatrix(const size_t size, const Iter begin, const Iter end);
+    SquareMatrix(const size_t size, T val = T{}) : contSqMatrix_(size, Buffer_<T>{size, val}), 
+                                                   matrixSize_(size) {};
+    
+    const size_t size() const noexcept {return matrixSize_;};
+    const long determinant();
 
-        SquareMatrix(const size_t size, T val = T{});
-        template <typename Iter> 
-        SquareMatrix(const size_t size, const Iter begin, const Iter end);
-        
-        const long determinant();
+    Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
     };
+
+//      SQUAREMATRIX
+
+    template <typename T>
+    template <typename Iter> 
+    SquareMatrix<T>::SquareMatrix(const size_t size, const Iter begin, const Iter end) 
+        : SquareMatrix<T>::SquareMatrix(size)
+    {
+        auto i = begin, e = end; 
+        for(size_t rowIndx = 0; i != e && rowIndx < size; ++rowIndx)
+            for(size_t colIndx = 0; colIndx < size; ++colIndx)
+                contSqMatrix_[rowIndx][colIndx] = *i++;
+    }
 
 //      SQUAREMATRIX::BUFFER_ 
 
@@ -97,6 +113,24 @@ namespace matrices
         bufSize_ = size; 
     }
 
+    template <typename T>
+    template <typename U>
+    SquareMatrix<T>::Buffer_<U>::Buffer_(const size_t size, U val)
+    {
+        pBuf_ = new U[size];
+        try
+        {
+            std::fill_n(pBuf_, size, val);  
+        }
+            catch(...)
+        {
+            delete [] pBuf_;
+            throw;
+        }
+    
+        bufSize_ = size; 
+    }
+
     template <typename T> 
     template <typename U> 
     SquareMatrix<T>::Buffer_<U>& 
@@ -129,16 +163,4 @@ namespace matrices
 
         return *this;
     }
-
-//      SQUAREMATRIX
-
-
-
-
-
-
-
-
-
-
 }   //  namespace matrices
