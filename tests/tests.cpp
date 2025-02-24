@@ -4,6 +4,93 @@
 
 #include "matrix.hpp"
 
+namespace determinanttests
+{
+//      struct for tests
+    template <typename T> struct DetParam
+    {
+        const std::vector<T> matrixVec;
+        double result;
+    };
+
+//      DETERMINANT TEST DATA
+    static std::vector<int> v1(1,1);    //  det == 0
+    static std::vector<int> v2(4,1);    //  det == 0
+    static std::vector<int> v3(100);    //  det == 0
+    
+    static std::vector<int> v4{ 1, 0, 0,    
+                                0, 1, 0,
+                                0, 0, 1 };  //  det == 1
+    
+    static std::vector<int> v5{ 0, 0, 0, 
+                                0, 1, 0, 
+                                0, 0, 1 };  //  det == 0
+
+    static std::vector<int> v6{ 1, 2, 3,
+                                3, 2, 1, 
+                                2, 1, 3 };  //  det == -12
+
+    static std::vector<int> v7{ 1, 4, 1,
+                                4, 0, 1, 
+                                4, 1, 4 };  //  det == -45
+
+    static std::vector<int> v8{ 0, 1, 2,
+                                2, 0, 1, 
+                                1, 2, 0 };  //  det == 9
+
+    static std::vector<int> l9{ 1, 0, 1, 2,
+                                0, 1, 0, 1,
+                                1, 0, 1, 0
+                                2, 1, 0, 1 };  //  det == -4
+                            
+    static std::vector<int> l10{ 0, 1, 1, 1,
+                                 1, 0, 1, 1,
+                                 1, 1, 0, 1,
+                                 1, 1, 1, 0 };  //  det == -3
+
+    static std::vector<int> l11{ 1, 2, 2, 1,
+                                 3, 0, 3, 1,
+                                 1, 3, 0, 3,
+                                 2, 1, 1, 2 };  //  det == 0
+    
+    static std::vector<int> l12{ 1, 2, 0, 3,
+                                 2, 1, 3, 0,
+                                 0, 3, 1, 2,
+                                 3, 0, 2, 1 };  //  det == 0
+                                
+    static std::vector<int> l13{ 4, 1, 6, 3,
+                                 1, 5, 1, 2,
+                                 2, 1, 5, 1,
+                                 3, 6, 1, 4 };  //  det == -21
+
+    static std::vector<int> l14{ 9, 9, 1, 0,
+                                 1, 6, 5, 9,
+                                 0, 0, 1, 9,
+                                 9, 9, 5, 6 };  //  det == -1350
+
+    static std::vector<int> l15{ 0, 1, 2, 3, 4
+                                 4, 0, 1, 2, 3
+                                 3, 4, 0, 1, 2
+                                 2, 3, 4, 0, 1
+                                 1, 2, 3, 4, 0};  //  det == 1250
+    
+
+
+
+
+
+
+
+
+
+
+}   //  namespace determinanttests
+
+
+
+
+
+
 TEST(MatrixTests, Test1)
 {
     std::vector<int> data(9, 1);
@@ -32,5 +119,7 @@ TEST(MatrixTests, Test2)
     }
     EXPECT_EQ(matrix.size(), size);
 }
+
+
  
 
