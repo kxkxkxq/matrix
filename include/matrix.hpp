@@ -1,12 +1,14 @@
 #pragma once
+
+#include <algorithm>
 #include <cstddef>
+#include <cmath>
 #include <utility>
 
 namespace matrices
 {
     template <typename T> class SquareMatrix
     {
-        public :
         template <typename U> class Buffer_ final
         {
             size_t bufSize_; 
@@ -45,6 +47,12 @@ namespace matrices
 
         Buffer_<Buffer_<T>> contSqMatrix_;
         const size_t matrixSize_; 
+        double det = std::nan("");
+        
+        const double calculate_determinant();
+        const double get_determinant() {return det;};
+
+        void swap_rows(Buffer_<T>& row1, Buffer_<T>& row2);
 
     public :
 
@@ -54,11 +62,12 @@ namespace matrices
                                                    matrixSize_(size) {};
     
     const size_t size() const noexcept {return matrixSize_;};
-    const long determinant();
 
     Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
+    const double determinant();
     };
 
+//-------------------------------------------------------------------------------------------------
 //      SQUAREMATRIX
 
     template <typename T>
@@ -72,6 +81,58 @@ namespace matrices
                 contSqMatrix_[rowIndx][colIndx] = *i++;
     }
 
+    template <typename T>
+    const double 
+    SquareMatrix<T>::determinant()
+    {
+        return (std::isnan(det)) ? calculate_determinant() : get_determinant(); 
+    }
+
+    template <typename T>
+    void 
+    SquareMatrix<T>::swap_rows(Buffer_<T>& row1, Buffer_<T>& row2)
+    {
+        assert(row1.size() == row2.size());
+        for(size_t i = 0; i < row1.size(); ++i)
+        {
+            T tmp = row1[i];
+            row1[i] = row2[i];
+            row2[i] = tmp;
+        }
+    }
+
+    template <typename T>
+    const double 
+    SquareMatrix<T>::calculate_determinant()
+    {
+        if(matrixSize_ == 0)
+            return contSqMatrix_[0][0];
+
+        SquareMatrix tmp{contSqMatrix_};
+
+        if(tmp[0][0] == 0)
+        {
+            size_t nonzeroElem = 1;
+            while((nonzeroElem < matrixSize_) && (tmp[nonzeroElem][0] != 0))
+                ++nonzeroElem;
+            swap_rows(tmp[0], tmp[1]);
+        }
+        assert(tmp[0][0] != 0);
+
+
+        for(size_t colIndx = 0, rowIndx = 0; colIndx < matrixSize_; ++colIndx, ++colIndx)
+        {
+            assert(colIndx == rowIndx);
+            for(size_t nextRowIndx = colIndx + 1; nextRowIndx < matrixSize_; ++nextRowIndx)
+            {
+                multiply_row_by_number();
+                multiply_row_by_number();
+                subtract_rows();
+            }
+        }        
+    }
+
+//-------------------------------------------------------------------------------------------------
 //      SQUAREMATRIX::BUFFER_ 
 
     template <typename T> 
