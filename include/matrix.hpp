@@ -29,6 +29,9 @@ namespace matrices
 
             Buffer_& operator=(const Buffer_& rhs);
             Buffer_& operator=(Buffer_&& rhs) noexcept;
+            
+            U& operator[](const int indx) {return pBuf_[indx];};
+            const U& operator[](const int indx) const {return pBuf_[indx];};
 
             ~Buffer_() {delete[] pBuf_;};
 
@@ -39,18 +42,14 @@ namespace matrices
 
             U& back() {return pBuf_[bufSize_ - 1];};
             const U& back() const {return pBuf_[bufSize_ - 1];};
-        
-            U& operator[](const int indx) {return pBuf_[indx];};
-            const U& operator[](const int indx) const {return pBuf_[indx];};
-
         };
 
         Buffer_<Buffer_<T>> contSqMatrix_;
-        const size_t matrixSize_; 
-        double det = std::nan("");
+        size_t matrixSize_; 
+        double det_ = std::nan("");
         
         const double calculate_determinant();
-        const double get_determinant() {return det;};
+        const double get_determinant() {return det_;};
 
         void swap_rows(Buffer_<T>& row1, Buffer_<T>& row2);
 
@@ -58,12 +57,26 @@ namespace matrices
 
     template <typename Iter> 
     SquareMatrix(const size_t size, const Iter begin, const Iter end);
+    
     SquareMatrix(const size_t size, T val = T{}) : contSqMatrix_(size, Buffer_<T>{size, val}), 
                                                    matrixSize_(size) {};
+
+    SquareMatrix(const SquareMatrix& rhs) : contSqMatrix_(rhs.contSqMatrix_), 
+                                            matrixSize_(rhs.matrixSize_),
+                                            det_(rhs.det_) {};
+
+    SquareMatrix(SquareMatrix&& rhs) noexcept : contSqMatrix_(std::move(rhs.contSqMatrix_)),
+                                                matrixSize_(std::move(rhs.matrixSize_)),
+                                                det_(std::move(rhs.det_)) {};
+
+    SquareMatrix& operator=(const SquareMatrix& rhs);
+    SquareMatrix& operator=(SquareMatrix&& rhs) noexcept;
+    
+    Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
+
+    ~SquareMatrix() = default; 
     
     const size_t size() const noexcept {return matrixSize_;};
-
-    Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
     const double determinant();
     };
 
@@ -82,10 +95,27 @@ namespace matrices
     }
 
     template <typename T>
+    SquareMatrix<T>&
+    SquareMatrix<T>::operator=(const SquareMatrix<T>& rhs)
+    {
+        
+    } 
+
+    template <typename T>
+    SquareMatrix<T>&
+    SquareMatrix<T>::operator=(SquareMatrix<T>&& rhs) noexcept
+    {
+        contSqMatrix_ = std::move(rhs.contSqMatrix_);
+        matrixSize_ = std::move(rhs.matrixSize_);
+        det_ = std::move(rhs.det_);
+        return *this;
+    }
+
+    template <typename T>
     const double 
     SquareMatrix<T>::determinant()
     {
-        return (std::isnan(det)) ? calculate_determinant() : get_determinant(); 
+        return (std::isnan(det_)) ? calculate_determinant() : get_determinant(); 
     }
 
     template <typename T>
@@ -112,13 +142,12 @@ namespace matrices
 
         if(tmp[0][0] == 0)
         {
-            size_t nonzeroElem = 1;
-            while((nonzeroElem < matrixSize_) && (tmp[nonzeroElem][0] != 0))
-                ++nonzeroElem;
+            size_t nonZeroElemIndx = 1;
+            while((nonZeroElemIndx < matrixSize_) && (tmp[nonZeroElemIndx][0] != 0))
+                ++nonZeroElemIndx;
             swap_rows(tmp[0], tmp[1]);
         }
         assert(tmp[0][0] != 0);
-
 
         for(size_t colIndx = 0, rowIndx = 0; colIndx < matrixSize_; ++colIndx, ++colIndx)
         {
@@ -198,10 +227,8 @@ namespace matrices
     SquareMatrix<T>::Buffer_<U>::operator=(SquareMatrix<T>::Buffer_<U>&& rhs) noexcept
     {
         delete [] pBuf_;
-        
         bufSize_ = std::move(rhs.bufSize_);
         pBuf_ = std::exchange(rhs.pBuf_, nullptr);
-
         return *this;
     }    
 
@@ -221,7 +248,6 @@ namespace matrices
     {
         Buffer_<U> tmp{rhs};
         swap(tmp);
-
         return *this;
     }
 }   //  namespace matrices
