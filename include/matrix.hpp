@@ -13,8 +13,6 @@ namespace matrices
         {
             size_t bufSize_; 
             U* pBuf_;
-            
-            void swap(Buffer_& rhs) noexcept;
 
         public :
 
@@ -42,42 +40,52 @@ namespace matrices
 
             U& back() {return pBuf_[bufSize_ - 1];};
             const U& back() const {return pBuf_[bufSize_ - 1];};
+
+        private :
+            
+            void swap(Buffer_& rhs) noexcept;
         };
+
+    private :
 
         Buffer_<Buffer_<T>> contSqMatrix_;
         size_t matrixSize_; 
         double det_ = std::nan("");
         
-        const double calculate_determinant();
-        const double get_determinant() {return det_;};
-
-        void swap_rows(Buffer_<T>& row1, Buffer_<T>& row2);
-
     public :
 
-    template <typename Iter> 
-    SquareMatrix(const size_t size, const Iter begin, const Iter end);
-    
-    SquareMatrix(const size_t size, T val = T{}) : contSqMatrix_(size, Buffer_<T>{size, val}), 
-                                                   matrixSize_(size) {};
+        template <typename Iter> 
+        SquareMatrix(const size_t size, const Iter begin, const Iter end);
+        
+        SquareMatrix(const size_t size, T val = T{}) : contSqMatrix_(size, Buffer_<T>{size, val}), 
+                                                       matrixSize_(size) {};
 
-    SquareMatrix(const SquareMatrix& rhs) : contSqMatrix_(rhs.contSqMatrix_), 
-                                            matrixSize_(rhs.matrixSize_),
-                                            det_(rhs.det_) {};
+        SquareMatrix(const SquareMatrix& rhs) : contSqMatrix_(rhs.contSqMatrix_), 
+                                                matrixSize_(rhs.matrixSize_),
+                                                det_(rhs.det_) {};
 
-    SquareMatrix(SquareMatrix&& rhs) noexcept : contSqMatrix_(std::move(rhs.contSqMatrix_)),
-                                                matrixSize_(std::move(rhs.matrixSize_)),
-                                                det_(std::move(rhs.det_)) {};
+        SquareMatrix(SquareMatrix&& rhs) noexcept : contSqMatrix_(std::move(rhs.contSqMatrix_)),
+                                                    matrixSize_(std::move(rhs.matrixSize_)),
+                                                    det_(std::move(rhs.det_)) {};
 
-    SquareMatrix& operator=(const SquareMatrix& rhs);
-    SquareMatrix& operator=(SquareMatrix&& rhs) noexcept;
-    
-    Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
+        SquareMatrix& operator=(const SquareMatrix& rhs);
+        SquareMatrix& operator=(SquareMatrix&& rhs) noexcept;
+        
+        Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
 
-    ~SquareMatrix() = default; 
-    
-    const size_t size() const noexcept {return matrixSize_;};
-    const double determinant();
+        ~SquareMatrix() = default; 
+        
+        const size_t size() const noexcept {return matrixSize_;};
+        const double determinant();
+
+    private :
+
+        const double calculate_determinant();
+        const double get_determinant() {return det_;};
+        void swap(SquareMatrix& rhs) noexcept;
+        
+        void swap_rows(Buffer_<T>& row1, Buffer_<T>& row2);                           
+        void rows_linear_combination(Buffer_<T>& row1, Buffer_<T>& row2, const size_t colIndx);
     };
 
 //-------------------------------------------------------------------------------------------------
@@ -98,7 +106,9 @@ namespace matrices
     SquareMatrix<T>&
     SquareMatrix<T>::operator=(const SquareMatrix<T>& rhs)
     {
-        
+        SquareMatrix<T> tmp{rhs};
+        swap(rhs);
+        return *this;
     } 
 
     template <typename T>
@@ -120,9 +130,11 @@ namespace matrices
 
     template <typename T>
     void 
-    SquareMatrix<T>::swap_rows(Buffer_<T>& row1, Buffer_<T>& row2)
+    SquareMatrix<T>::swap_rows( SquareMatrix<T>::Buffer_<T>& row1, 
+                                SquareMatrix<T>::Buffer_<T>& row2 )
     {
         assert(row1.size() == row2.size());
+        assert(&row1 != &row2);
         for(size_t i = 0; i < row1.size(); ++i)
         {
             T tmp = row1[i];
@@ -132,33 +144,66 @@ namespace matrices
     }
 
     template <typename T>
+    void
+    SquareMatrix<T>::rows_linear_combination( SquareMatrix<T>::Buffer_<T>& row1, 
+                                              SquareMatrix<T>::Buffer_<T>& row2,    
+                                              const size_t colIndx )
+    {
+        assert(&row1 != &row2);
+        assert(row1.size() == row2.size());
+        assert(row1[colIndx] != 0);
+        assert(colIndx >= 0);
+        assert(colIndx < matrixSize_);
+
+        size_t coef1 = row1[colIndx], coef2 = row2[colIndx];
+        for(size_t i = 0; i < row1.size(); ++i)
+        {
+            row2[i] *= coef1;
+            row1[i] *= coef2;
+            row2[i] -= row1[i];
+            row1[i] /= coef2;
+        }
+        assert(row1[colIndx] != 0);
+        assert(row2[colIndx] == 0);
+    }
+
+    template <typename T>
     const double 
     SquareMatrix<T>::calculate_determinant()
     {
-        if(matrixSize_ == 0)
+        if(matrixSize_ == 1)
             return contSqMatrix_[0][0];
 
-        SquareMatrix tmp{contSqMatrix_};
+        SquareMatrix<T> tmp{contSqMatrix_};
 
-        if(tmp[0][0] == 0)
-        {
-            size_t nonZeroElemIndx = 1;
-            while((nonZeroElemIndx < matrixSize_) && (tmp[nonZeroElemIndx][0] != 0))
-                ++nonZeroElemIndx;
-            swap_rows(tmp[0], tmp[1]);
-        }
-        assert(tmp[0][0] != 0);
-
-        for(size_t colIndx = 0, rowIndx = 0; colIndx < matrixSize_; ++colIndx, ++colIndx)
+        for(size_t colIndx = 0, rowIndx = 0; colIndx < matrixSize_; ++colIndx, ++rowIndx)
         {
             assert(colIndx == rowIndx);
-            for(size_t nextRowIndx = colIndx + 1; nextRowIndx < matrixSize_; ++nextRowIndx)
+            if(tmp[rowIndx][colIndx] == 0)
             {
-                multiply_row_by_number();
-                multiply_row_by_number();
-                subtract_rows();
+                size_t nzIndx; = rowIndx + 1;   //  nzIndx is the index of non-zero element
+                                                //  column number colIndx
+                for( ; (nzIndx < matrixSize_) && (tmp[nzIndx][colIndx] == 0); ++nzIndx) {};
+
+                if(nzIndx == matrixSize_)
+                    return 0;
+                else
+                    swap_rows(tmp[rowIndx], tmp[nzIndx]);
             }
-        }        
+            assert(tmp[rowIndx][colIndx] != 0);
+
+            for(size_t nextIndx = rowIndx + 1; nextIndx < matrixSize_; ++nextIndx)
+                rows_linear_combination(tmp[rowIndx], tmp[nextIndx], colIndx);
+        }
+    }
+
+    template <typename T>
+    void
+    SquareMatrix<T>::swap(SquareMatrix<T>& rhs) noexcept
+    {
+        std::swap(contSqMatrix_, rhs.contSqMatrix_);
+        std::swap(matrixSize_, rhs.matrixSize_);
+        std::swap(det_, rhs.det_);
     }
 
 //-------------------------------------------------------------------------------------------------
@@ -179,7 +224,6 @@ namespace matrices
             delete [] pBuf_;
             throw;
         }
-
         bufSize_ = rhs.bufSize_; 
     }
 
@@ -199,7 +243,6 @@ namespace matrices
             delete [] pBuf_;
             throw;
         }
-    
         bufSize_ = size; 
     }
 
@@ -217,7 +260,6 @@ namespace matrices
             delete [] pBuf_;
             throw;
         }
-    
         bufSize_ = size; 
     }
 
