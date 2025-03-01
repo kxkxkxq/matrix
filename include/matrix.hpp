@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <algorithm>
 #include <cstddef>
 #include <cmath>
@@ -72,20 +73,26 @@ namespace matrices
         SquareMatrix& operator=(SquareMatrix&& rhs) noexcept;
         
         Buffer_<T>& operator[](const int indx) {return contSqMatrix_[indx];};
+        const Buffer_<T>& operator[](const int indx) const {return contSqMatrix_[indx];};
 
         ~SquareMatrix() = default; 
         
         const size_t size() const noexcept {return matrixSize_;};
-        const double determinant();
+        const double determinant(); //  if determinant of the matrix has not been calculated 
+                                    //  at the moment of colling this func, it calls the algorithm
+                                    //  to calculate the determinant, otherwise it returns the value
+                                    //  of determinant of the matrix
 
     private :
 
-        const double calculate_determinant();
-        const double get_determinant() {return det_;};
+        const double calculate_determinant();   //  algorithm to calculate the determinant
         void swap(SquareMatrix& rhs) noexcept;
         
         void swap_rows(Buffer_<T>& row1, Buffer_<T>& row2);                           
-        void rows_linear_combination(Buffer_<T>& row1, Buffer_<T>& row2, const size_t colIndx);
+        const T rows_elementary_operations(Buffer_<T>& row1, Buffer_<T>& row2, const size_t colIndx);
+                //  this func perfoms elementary operations on the specified rows 
+                //  and returns a coef by which determinant of obtained matrix 
+                //  should be divided to be equal to determinant of the initial matrix                                          
     };
 
 //-------------------------------------------------------------------------------------------------
@@ -125,7 +132,7 @@ namespace matrices
     const double 
     SquareMatrix<T>::determinant()
     {
-        return (std::isnan(det_)) ? calculate_determinant() : get_determinant(); 
+        return (std::isnan(det_)) ? calculate_determinant() : det_; 
     }
 
     template <typename T>
@@ -137,64 +144,78 @@ namespace matrices
         assert(&row1 != &row2);
         for(size_t i = 0; i < row1.size(); ++i)
         {
-            T tmp = row1[i];
-            row1[i] = row2[i];
+            T tmp = -row1[i];   //  when the matrix rows swap, the sign of determinant changes, 
+            row1[i] = row2[i];  //  so one of the rows must be multiplied by -1
             row2[i] = tmp;
         }
     }
 
     template <typename T>
-    void
-    SquareMatrix<T>::rows_linear_combination( SquareMatrix<T>::Buffer_<T>& row1, 
+    const T
+    SquareMatrix<T>::rows_elementary_operations( SquareMatrix<T>::Buffer_<T>& row1, 
                                               SquareMatrix<T>::Buffer_<T>& row2,    
                                               const size_t colIndx )
     {
         assert(&row1 != &row2);
         assert(row1.size() == row2.size());
-        assert(row1[colIndx] != 0);
+        assert(std::fabs(row1[colIndx]) > 1e-6);
         assert(colIndx >= 0);
         assert(colIndx < matrixSize_);
-
-        size_t coef1 = row1[colIndx], coef2 = row2[colIndx];
-        for(size_t i = 0; i < row1.size(); ++i)
+        
+        if(std::fabs(row2[colIndx]) < 1e-6)
+                return 1;   //  since there were no elementary operations on the matrix rows, 
+                            //  the determinant should not be changed  
+        const T coef1 = row1[colIndx];
+        const T coef2 = row2[colIndx];
+        for(size_t i = colIndx; i < row1.size(); ++i)
         {
             row2[i] *= coef1;
             row1[i] *= coef2;
             row2[i] -= row1[i];
             row1[i] /= coef2;
-        }
-        assert(row1[colIndx] != 0);
-        assert(row2[colIndx] == 0);
+        } 
+
+        assert(std::fabs(row1[colIndx]) > 1e-6);
+        assert(std::fabs(row2[colIndx]) < 1e-6);
+        return coef1;
     }
 
-    template <typename T>
-    const double 
-    SquareMatrix<T>::calculate_determinant()
+    template <typename T>                       //  this algorithm reduces the matrix to right
+    const double                                //  triangular form and calculates its determinant
+    SquareMatrix<T>::calculate_determinant()    //  by multiplying the elements of major diagonal
     {
         if(matrixSize_ == 1)
             return contSqMatrix_[0][0];
 
-        SquareMatrix<T> tmp{contSqMatrix_};
+        Buffer_<Buffer_<T>> tmp{contSqMatrix_};
+
+        double determinant = 1;
 
         for(size_t colIndx = 0, rowIndx = 0; colIndx < matrixSize_; ++colIndx, ++rowIndx)
         {
             assert(colIndx == rowIndx);
-            if(tmp[rowIndx][colIndx] == 0)
+            if(std::fabs(tmp[rowIndx][colIndx]) < 1e-6)
             {
-                size_t nzIndx; = rowIndx + 1;   //  nzIndx is the index of non-zero element
-                                                //  column number colIndx
+                size_t nzIndx = rowIndx + 1;    //  nzIndx is an index of non-zero element
+                                                //  of column number colIndx
                 for( ; (nzIndx < matrixSize_) && (tmp[nzIndx][colIndx] == 0); ++nzIndx) {};
 
                 if(nzIndx == matrixSize_)
-                    return 0;
+                    return 0;   //  if all column elements of the matrix are equal to zero,
+                                //  then its determinant also equal to zero
                 else
                     swap_rows(tmp[rowIndx], tmp[nzIndx]);
             }
-            assert(tmp[rowIndx][colIndx] != 0);
+            assert(std::fabs(tmp[rowIndx][colIndx]) > 1e-6);
 
-            for(size_t nextIndx = rowIndx + 1; nextIndx < matrixSize_; ++nextIndx)
-                rows_linear_combination(tmp[rowIndx], tmp[nextIndx], colIndx);
+            for(size_t nextIndx = rowIndx + 1; nextIndx < matrixSize_; ++nextIndx){
+                const T coef = rows_elementary_operations(tmp[rowIndx], tmp[nextIndx], colIndx);
+                determinant /= coef;
+            }
+            determinant *= tmp[rowIndx][colIndx];
+            assert(std::fabs(determinant) > 1e-6);
         }
+        return determinant;
     }
 
     template <typename T>
