@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
 #include <algorithm>
-#include <cstddef>
+#include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <utility>
 
 namespace matrices
@@ -153,8 +153,8 @@ namespace matrices
     template <typename T>
     const T
     SquareMatrix<T>::rows_elementary_operations( SquareMatrix<T>::Buffer_<T>& row1, 
-                                              SquareMatrix<T>::Buffer_<T>& row2,    
-                                              const size_t colIndx )
+                                                 SquareMatrix<T>::Buffer_<T>& row2,    
+                                                 const size_t colIndx )
     {
         assert(&row1 != &row2);
         assert(row1.size() == row2.size());
@@ -184,7 +184,9 @@ namespace matrices
     const double                                //  triangular form and calculates its determinant
     SquareMatrix<T>::calculate_determinant()    //  by multiplying the elements of major diagonal
     {
-        if(matrixSize_ == 1)
+        if(matrixSize_ == 0)
+            return 0;
+        else if(matrixSize_ == 1)
             return contSqMatrix_[0][0];
 
         Buffer_<Buffer_<T>> tmp{contSqMatrix_};
@@ -208,7 +210,8 @@ namespace matrices
             }
             assert(std::fabs(tmp[rowIndx][colIndx]) > 1e-6);
 
-            for(size_t nextIndx = rowIndx + 1; nextIndx < matrixSize_; ++nextIndx){
+            for(size_t nextIndx = rowIndx + 1; nextIndx < matrixSize_; ++nextIndx)
+            {
                 const T coef = rows_elementary_operations(tmp[rowIndx], tmp[nextIndx], colIndx);
                 determinant /= coef;
             }
