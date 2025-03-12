@@ -1,21 +1,22 @@
 #pragma once
 
 #include <cassert>
+#include <concepts>
 #include <random>
 #include <vector>
 
 namespace e2etests
 {
-    template<typename T> class MatrixGenerator final
+    template <typename T> class MatrixGenerator final
     {
         const size_t matrixSize_;
         double matrixDeterminant_;
-        std::vector<std::vector<T>> matrixVector_;
+        std::vector<std::vector<double>> matrixVector_;
 
     public :
         MatrixGenerator(const size_t s, const double d) : matrixSize_(s), 
                                                           matrixDeterminant_(d),
-                                                          matrixVector_(s, std::vector<T>(s, 0)) 
+                                                          matrixVector_(s, std::vector<double>(s, 0)) 
         {
             for(size_t i = 0; i < matrixSize_; ++i)
                 matrixVector_[i][i] = 1;
@@ -31,15 +32,14 @@ namespace e2etests
             tmp.reserve(matrixSize_ * matrixSize_);
             for(auto&& i : matrixVector_)
                 for(auto&& j : i)
-                    tmp.push_back(j);
+                    tmp.push_back(static_cast<T>(j));
             return tmp;
         }
 
     private :
         const int get_pseudorandom_number(const int lb, const int  ub)
         {
-            if(lb == ub)
-                return lb;
+            if(lb == ub) return lb;
             std::random_device r;
             std::mt19937 gen(r());    
             std::uniform_int_distribution<> req_dist{lb, ub};
@@ -64,7 +64,9 @@ namespace e2etests
        }                                           
         
         void rows_elementary_operations(const size_t rowNum1, const size_t rowNum2);
-            //  this func multiplies the rows by random coefs and sums them up
+            //  This func performs simple linear operations : 
+            //  subtracts the first row of the matrix (multiplied by a random coefficient)
+            //  from the second row
     };
 
     template <typename T>
@@ -81,14 +83,13 @@ namespace e2etests
             transpose_matrix();
             swap_rows(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
         }
-#if 0        
+            
         for(auto&& j : matrixVector_) //  N times do rows and columns elementary operations
         {
             rows_elementary_operations(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
             transpose_matrix();
             rows_elementary_operations(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
-        }
-#endif       
+        }      
     }
 
     template <typename T>
@@ -96,21 +97,20 @@ namespace e2etests
     MatrixGenerator<T>::rows_elementary_operations(const size_t rowNum1, const size_t rowNum2)
     {
         if(rowNum1 == rowNum2) return;
-        std::vector<T>& row1Ref = matrixVector_[rowNum1];
-        std::vector<T>& row2Ref = matrixVector_[rowNum2];
+        std::vector<double>& row1Ref = matrixVector_[rowNum1];
+        std::vector<double>& row2Ref = matrixVector_[rowNum2];
         assert(row1Ref.size() == row2Ref.size()); 
 
-        const int limit = 100;
-        const int coef1 = get_pseudorandom_number(-limit, limit);  //  the range from -100 to 100
-        const int coef2 = get_pseudorandom_number(-limit, limit);  //  is chosen as the range of random numbers
-        if(coef1 == 0 || coef2 == 0) return;
+        const int limit = 10;
+        const int coef = get_pseudorandom_number(-limit, limit);  //  the range from -100 to 100  
+        if(!coef) return;                                         //  is chosen as the range of random numbers
 
         for(size_t i = 0; i < row1Ref.size(); ++i)
         {
-            row1Ref[i] *= coef1;
-            row2Ref[i] *= coef2;
+            row1Ref[i] *= coef;
             row2Ref[i] -= row1Ref[i];
-            //  div
+            assert(coef);
+            row1Ref[i] /= coef;
         }
     }
 }   //  namespace e2etests
