@@ -94,7 +94,7 @@ namespace matrices
         void rows_elementary_operations(Buffer_<double>& row1, Buffer_<double>& row2, const size_t colIndx);
                 //  this func perfoms elementary operations on the specified rows 
                 //  and returns a coef by which determinant of obtained matrix 
-                //  should be divided to be equal to determinant of the initial matrix                                          
+                //  should be divided to be equal to determinant of the initial matrix  
     };
 
 //-------------------------------------------------------------------------------------------------
@@ -146,8 +146,8 @@ namespace matrices
         assert(&row1 != &row2);
         for(size_t i = 0; i < row1.size(); ++i)
         {
-            T tmp = -row1[i];   //  when the matrix rows swap, the sign of determinant changes, 
-            row1[i] = row2[i];  //  so one of the rows must be multiplied by -1
+            double tmp = -row1[i];  //  when the matrix rows swap, the sign of determinant changes, 
+            row1[i] = row2[i];      //  so one of the rows must be multiplied by -1
             row2[i] = tmp;
         }
     }
@@ -160,34 +160,33 @@ namespace matrices
     {
         assert(&row1 != &row2);
         assert(row1.size() == row2.size());
-        assert(std::fabs(row1[colIndx]) > 1e-6);
+        assert(std::fabs(row1[colIndx]) > 1e-4);
         assert(colIndx >= 0);
         assert(colIndx < matrixSize_);
         
-        if(std::fabs(row2[colIndx]) < 1e-6) return; //  since there were no elementary operations on the matrix rows, 
-                                                    //  the determinant should not be changed  
+        if(std::fabs(row2[colIndx]) < 1e-4) return; 
+        //  since there were no elementary operations on the matrix rows, 
+        //  the determinant should not be changed  
         
         const double coef1 = row1[colIndx];
         const double coef2 = row2[colIndx];
-        for(size_t i = colIndx; i < row1.size(); ++i)
-        {
-            row2[i] *= coef1;
-            row1[i] *= coef2;
-            row2[i] -= row1[i];
-            row1[i] /= coef2;
-            row2[i] /= coef1;
-        } 
+        const double coef = coef2 / coef1;
 
-        assert(std::fabs(row1[colIndx]) > 1e-6);
-        assert(std::fabs(row2[colIndx]) < 1e-6);
+        for(size_t i = colIndx; i < row1.size(); ++i)
+            row2[i] -= row1[i] * coef; 
+
+        assert(std::fabs(row1[colIndx]) > 1e-4);
+        assert(std::fabs(row2[colIndx]) < 1e-4);
     }
 
-    template <typename T>                       //  this algorithm reduces the matrix to right
-    const double                                //  triangular form and calculates its determinant
-    SquareMatrix<T>::calculate_determinant()    //  by multiplying the elements of major diagonal
+    template <typename T>                     //  this algorithm reduces the matrix to right
+    const double                              //  triangular form and calculates its determinant
+    SquareMatrix<T>::calculate_determinant()  //  by multiplying the elements of major diagonal
     {
-        if(matrixSize_ == 0) return 0;
-        else if(matrixSize_ == 1) return contSqMatrix_[0][0];
+        if(matrixSize_ == 0) 
+            return 0;
+        else if(matrixSize_ == 1) 
+            return contSqMatrix_[0][0];
     
         Buffer_<Buffer_<double>> tmp{contSqMatrix_};
         double determinant = 1;
@@ -195,28 +194,26 @@ namespace matrices
         for(size_t colIndx = 0, rowIndx = 0; colIndx < matrixSize_; ++colIndx, ++rowIndx)
         {
             assert(colIndx == rowIndx);
-            if(std::fabs(tmp[rowIndx][colIndx]) < 1e-6)
+            if(std::fabs(tmp[rowIndx][colIndx]) < 1e-4)
             {
                 size_t nzIndx = rowIndx + 1;    //  nzIndx is an index of non-zero element
                                                 //  of column number colIndx
-                for( ; (nzIndx < matrixSize_) && (std::fabs(tmp[nzIndx][colIndx]) < 1e-6); ++nzIndx) {};
+                for( ; (nzIndx < matrixSize_) && (std::fabs(tmp[nzIndx][colIndx]) < 1e-4); ++nzIndx) {};
 
-                if(nzIndx == matrixSize_)
-                    return 0;   //  if all column elements of the matrix are equal to zero,
-                                //  then its determinant also equal to zero
+                if(nzIndx == matrixSize_)  //  if all column elements of the matrix are equal to zero,
+                    return 0;              //  then its determinant also equal to zero  
                 else
                     swap_rows(tmp[rowIndx], tmp[nzIndx]);
             }
-            assert(std::fabs(tmp[rowIndx][colIndx]) > 1e-6);
-
+            assert(std::fabs(tmp[rowIndx][colIndx]) > 1e-4);
 
             for(size_t nextIndx = rowIndx + 1; nextIndx < matrixSize_; ++nextIndx)
                 rows_elementary_operations(tmp[rowIndx], tmp[nextIndx], colIndx );
 
             determinant *= tmp[rowIndx][colIndx];
-            assert(std::fabs(determinant) > 1e-6);
+            assert(std::fabs(determinant) > 1e-4);
         }
-        return determinant;
+        return std::round(determinant);
     }
 
     template <typename T>
