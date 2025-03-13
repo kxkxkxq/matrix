@@ -46,5 +46,5 @@ to run unit tests use
 ```
 to run end to end tests use 
 ```bush
-python3 tests/end-to-end-tests/run_e2e_tests.py
+ctest --test-dir ./build
 ```
