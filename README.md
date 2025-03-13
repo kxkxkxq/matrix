@@ -40,7 +40,11 @@ to calculate determinant use
 ```bush
 ./build/src/determinant
 ```
-to run tests use 
+to run unit tests use 
 ```bush
-./build/tests/tests
+./build/tests/unit-tests/unit-tests 
+```
+to run end to end tests use 
+```bush
+python3 tests/end-to-end-tests/run_e2e_tests.py
 ```
