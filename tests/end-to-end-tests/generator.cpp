@@ -27,10 +27,10 @@ int main()
         return 1;
     }  
 
-    e2etests::MatrixGenerator<int> mg{static_cast<size_t>(matrixSize), determinant};
+    e2etests::MatrixGenerator<long long> mg{static_cast<size_t>(matrixSize), determinant};
     mg.generate_matrix();
-    std::vector<int> resultMatrixVec(mg.get_matrix_vec());
-    
+    std::vector<long long> resultMatrixVec(mg.get_matrix_vec());
+
     std::cout << matrixSize << std::endl;
     for(auto&& i : resultMatrixVec)
         std::cout << i << " ";

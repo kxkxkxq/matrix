@@ -11,12 +11,12 @@ namespace e2etests
     {
         const size_t matrixSize_;
         double matrixDeterminant_;
-        std::vector<std::vector<double>> matrixVector_;
+        std::vector<std::vector<T>> matrixVector_;
 
     public :
         MatrixGenerator(const size_t s, const double d) : matrixSize_(s), 
                                                           matrixDeterminant_(d),
-                                                          matrixVector_(s, std::vector<double>(s, 0)) 
+                                                          matrixVector_(s, std::vector<T>(s, 0)) 
         {
             for(size_t i = 0; i < matrixSize_; ++i)
                 matrixVector_[i][i] = 1;
@@ -32,7 +32,7 @@ namespace e2etests
             tmp.reserve(matrixSize_ * matrixSize_);
             for(auto&& i : matrixVector_)
                 for(auto&& j : i)
-                    tmp.push_back(static_cast<T>(j));
+                    tmp.push_back((j));
             return tmp;
         }
 
@@ -64,9 +64,9 @@ namespace e2etests
        }                                           
         
         void rows_elementary_operations(const size_t rowNum1, const size_t rowNum2);
-            //  This func performs simple linear operations : 
-            //  subtracts the first row of the matrix (multiplied by a random coefficient)
-            //  from the second row
+        //  This func performs simple linear operations : 
+        //  subtracts the first row of the matrix (multiplied by a random coefficient)
+        //  from the second row
     };
 
     template <typename T>
@@ -74,43 +74,42 @@ namespace e2etests
     MatrixGenerator<T>::generate_matrix()
     {
         if(matrixSize_ == 1) return;
-        size_t lb = 0;
+        size_t lb = 1;
         size_t ub = matrixSize_ - 1;
 
-        for(auto&& i : matrixVector_) //  N times swap rows and columns
+        for(size_t i = 0, N = matrixVector_.size(); i < N * N; ++i) //  N * N times swap rows and columns
         {
             swap_rows(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
             transpose_matrix();
             swap_rows(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
         }
             
-        for(auto&& j : matrixVector_) //  N times do rows and columns elementary operations
+        for(size_t i = 0, N = matrixVector_.size(); i <  N; ++i) //  N times do rows and columns elementary operations
         {
+            
             rows_elementary_operations(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
             transpose_matrix();
             rows_elementary_operations(get_pseudorandom_number(lb, ub), get_pseudorandom_number(lb, ub));
         }      
     }
 
-    template <typename T>
+    template <typename T>  
     void 
     MatrixGenerator<T>::rows_elementary_operations(const size_t rowNum1, const size_t rowNum2)
     {
         if(rowNum1 == rowNum2) return;
-        std::vector<double>& row1Ref = matrixVector_[rowNum1];
-        std::vector<double>& row2Ref = matrixVector_[rowNum2];
+        std::vector<T>& row1Ref = matrixVector_[rowNum1];
+        std::vector<T>& row2Ref = matrixVector_[rowNum2];  
         assert(row1Ref.size() == row2Ref.size()); 
 
-        const int limit = 10;
-        const int coef = get_pseudorandom_number(-limit, limit);  //  the range from -100 to 100  
-        if(!coef) return;                                         //  is chosen as the range of random numbers
+        const int limit = 3;
+        const int coef = get_pseudorandom_number(-limit, limit);  //  the range from -3 to 3  
+        if(!coef) return;                                         //  is chosen as the range of random coefs
 
         for(size_t i = 0; i < row1Ref.size(); ++i)
         {
-            row1Ref[i] *= coef;
-            row2Ref[i] -= row1Ref[i];
+            row2Ref[i] -= row1Ref[i] * coef;
             assert(coef);
-            row1Ref[i] /= coef;
         }
     }
 }   //  namespace e2etests
